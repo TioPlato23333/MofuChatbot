@@ -1,0 +1,3 @@
+[submodule "DialoGPT-medium"]
+	path = DialoGPT-medium
+	url = git@hf.co:microsoft/DialoGPT-medium
