@@ -6,7 +6,7 @@ if __name__ == '__main__':
     tokenizer = AutoTokenizer.from_pretrained('DialoGPT-medium')
     model = AutoModelForCausalLM.from_pretrained('DialoGPT-medium')
     # Let's chat for 5 lines
-    for step in range(5):
+    for step in range(10):
         # encode the new user input, add the eos_token and return a tensor in Pytorch
         new_user_input_ids = tokenizer.encode(input('>> User:') + tokenizer.eos_token, \
             return_tensors='pt')
@@ -16,8 +16,15 @@ if __name__ == '__main__':
         else:
             bot_input_ids = torch.cat([chat_history_ids, new_user_input_ids], dim=-1)
         # generated a response while limiting the total chat history to 1000 tokens, 
-        chat_history_ids = model.generate(bot_input_ids, max_length=1000, \
-            pad_token_id=tokenizer.eos_token_id)
+        chat_history_ids = model.generate(bot_input_ids,
+            max_length=1000, \
+            pad_token_id=tokenizer.eos_token_id, \
+            no_repeat_ngram_size=2, # n-gram penalty, Paulus et al. (2017) and Klein et al. (2017)
+            num_beams=5,            # use beam search, depth = 5
+            early_stopping=True, \
+            temperature=2.0, \
+            length_penalty=2.0, \
+            repetition_penalty=2.0)
         print(bot_input_ids)
         print(chat_history_ids)
         # pretty print last ouput tokens from bot
