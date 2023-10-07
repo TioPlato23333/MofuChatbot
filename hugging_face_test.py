@@ -11,5 +11,6 @@ raw_inputs = [
     'This is input 1',
     'Hello, I\'m the second input'
 ]
-inputs = tokenizer(raw_inputs, padding=True, truncation=True, return_tensors='pt')
+inputs = tokenizer.encode(raw_inputs)
 print(inputs)
+print(tokenizer.decode(inputs))
