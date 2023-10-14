@@ -21,4 +21,7 @@ print(ids.shape[-1])
 print(tokenizer.decode(output_ids.sequences[0][ids.shape[-1]:]))
 '''
 
-dataset = load_dataset('./lhoestq/demo1')
+dataset = load_dataset('./lhoestq/demo1', split='train')
+print(dataset)
+for line in dataset:
+    print(line)
