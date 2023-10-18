@@ -80,4 +80,21 @@ class Args():
         self.fp16_opt_level = 'O1'
 
 args = Args()
-print(args)
+
+all_rick = pd.read_csv('RickAndMortyScripts.csv')
+contexted = []
+n = 7
+for i in range(n, len(all_rick['line'])):
+  row = []
+  prev = i - 1 - n # we additionally subtract 1, so row will contain current response and 7 previous responses  
+  for j in range(i, prev, -1):
+    row.append(all_rick['line'][j])
+  contexted.append(row)
+columns = ['response', 'context'] 
+columns = columns + ['context/'+str(i) for i in range(n-1)]
+df = pd.DataFrame.from_records(contexted, columns=columns)
+df.head(5)
+
+trn_df, val_df = train_test_split(df, test_size = 0.1)
+print(trn_df)
+print(val_df)
