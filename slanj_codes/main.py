@@ -48,9 +48,9 @@ class Args():
     def __init__(self):
         self.output_dir = 'output-small'
         self.model_type = 'gpt2'
-        self.model_name_or_path = 'microsoft/DialoGPT-small'
-        self.config_name = 'microsoft/DialoGPT-small'
-        self.tokenizer_name = 'microsoft/DialoGPT-small'
+        self.model_name_or_path = '../DialoGPT-medium'
+        self.config_name = '../DialoGPT-medium'
+        self.tokenizer_name = '../DialoGPT-medium'
         self.cache_dir = 'cached'
         self.block_size = 512
         self.do_train = True
@@ -96,5 +96,11 @@ df = pd.DataFrame.from_records(contexted, columns=columns)
 df.head(5)
 
 trn_df, val_df = train_test_split(df, test_size = 0.1)
-print(trn_df)
-print(val_df)
+
+def construct_conv(row, tokenizer, eos = True):
+    flatten = lambda l: [item for sublist in l for item in sublist]
+    conv = list(reversed([tokenizer.encode(text=x) + [tokenizer.eos_token_id] for x in row]))
+    conv = flatten(conv)
+    return conv
+
+print(construct_conv(['row row row'], tokenizer=AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)))
