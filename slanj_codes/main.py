@@ -5,6 +5,7 @@ import pickle
 import random
 import re
 import shutil
+import sys
 from typing import Dict, List, Tuple
 
 import pandas as pd
@@ -32,21 +33,22 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 
-
 try:
     from torch.utils.tensorboard import SummaryWriter
 except ImportError:
     from tensorboardX import SummaryWriter
 
 # Configs
+logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 MODEL_CONFIG_CLASSES = list(MODEL_WITH_LM_HEAD_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
 class Args():
     def __init__(self):
-        self.output_dir = 'output-small'
+        self.output_dir = 'output-medium'
         self.model_type = 'gpt2'
         self.model_name_or_path = '../DialoGPT-medium'
         self.config_name = '../DialoGPT-medium'
@@ -91,16 +93,42 @@ for i in range(n, len(all_rick['line'])):
     row.append(all_rick['line'][j])
   contexted.append(row)
 columns = ['response', 'context'] 
-columns = columns + ['context/'+str(i) for i in range(n-1)]
+columns = columns + ['context/' + str(i) for i in range(n - 1)]
 df = pd.DataFrame.from_records(contexted, columns=columns)
 df.head(5)
 
-trn_df, val_df = train_test_split(df, test_size = 0.1)
+trn_df, val_df = train_test_split(df, test_size=0.1)
 
-def construct_conv(row, tokenizer, eos = True):
+def construct_conv(row, tokenizer, eos=True):
     flatten = lambda l: [item for sublist in l for item in sublist]
-    conv = list(reversed([tokenizer.encode(text=x) + [tokenizer.eos_token_id] for x in row]))
+    conv = list(reversed([tokenizer.encode(x) + [tokenizer.eos_token_id] for x in row]))
     conv = flatten(conv)
     return conv
 
-print(construct_conv(['row row row'], tokenizer=AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)))
+class ConversationDataset(Dataset):
+    def __init__(self, tokenizer, args, df, block_size=512):
+        block_size = block_size - (tokenizer.max_len - tokenizer.max_len_single_sentence)
+
+        directory = args.cache_dir
+        cached_features_file = os.path.join(
+            directory, args.model_type + '_cached_lm_' + str(block_size)
+        )
+
+        if os.path.exists(cached_features_file) and not args.overwrite_cache:
+            logger.info('Loading features from cached file %s', cached_features_file)
+            with open(cached_features_file, 'rb') as handle:
+                self.examples = pickle.load(handle)
+        else:
+            logger.info('Creating features from dataset file at %s', directory)
+
+            self.examples = []
+            for _, row in df.iterrows():
+                conv = construct_conv(row, tokenizer)
+                self.examples.append(conv)
+
+            logger.info('Saving features into cached file %s', cached_features_file)
+            with open(cached_features_file, 'wb') as handle:
+                pickle.dump(self.examples, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
+dataset = ConversationDataset(tokenizer, args, val_df)
