@@ -81,8 +81,6 @@ class Args():
         self.fp16 = False
         self.fp16_opt_level = 'O1'
 
-args = Args()
-
 def read_csv():
     all_rick = pd.read_csv('RickAndMortyScripts.csv')
     contexted = []
@@ -137,8 +135,15 @@ class ConversationDataset(Dataset):
     def __getitem__(self, item):
         return torch.tensor(self.examples[item], dtype=torch.long)
 
-tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
-trn_df, val_df = read_csv()
-dataset = ConversationDataset(tokenizer, args, val_df)
-print(len(val_df), len(dataset))
-print(dataset[0])
+# Cacheing and storing of data/checkpoints
+
+def load_and_cache_examples(args, tokenizer, df_trn, df_val, evaluate=False):
+    return ConversationDataset(tokenizer, args, df_val if evaluate else df_trn)
+
+if __name__ == '__main__':
+    args = Args()
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
+    trn_df, val_df = read_csv()
+    dataset = load_and_cache_examples(args, tokenizer, trn_df, val_df, evaluate=True)
+    print(len(val_df), len(dataset))
+    print(dataset[0])
