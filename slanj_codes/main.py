@@ -140,6 +140,13 @@ class ConversationDataset(Dataset):
 def load_and_cache_examples(args, tokenizer, df_trn, df_val, evaluate=False):
     return ConversationDataset(tokenizer, args, df_val if evaluate else df_trn)
 
+def set_seed(args):
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if args.n_gpu > 0:
+        torch.cuda.manual_seed_all(args.seed)
+
 if __name__ == '__main__':
     args = Args()
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
