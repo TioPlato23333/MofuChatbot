@@ -94,6 +94,7 @@ def read_csv():
     columns = ['response', 'context'] 
     columns = columns + ['context/' + str(i) for i in range(n - 1)]
     df = pd.DataFrame.from_records(contexted, columns=columns)
+    print(df)
 
     trn_df, val_df = train_test_split(df, test_size=0.1)
     return trn_df, val_df
