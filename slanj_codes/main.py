@@ -94,7 +94,6 @@ def read_csv():
     columns = ['response', 'context'] 
     columns = columns + ['context/' + str(i) for i in range(n - 1)]
     df = pd.DataFrame.from_records(contexted, columns=columns)
-    print(df)
 
     trn_df, val_df = train_test_split(df, test_size=0.1)
     return trn_df, val_df
@@ -182,12 +181,15 @@ def _rotate_checkpoints(args, checkpoint_prefix='checkpoint', use_mtime=False) -
         logger.info('Deleting older checkpoint [{}] due to args.save_total_limit'.format(checkpoint))
         shutil.rmtree(checkpoint)
 
+def train(args, train_dataset, model=PreTrainedModel, tokenizer=PreTrainedTokenizer) -> Tuple[int, float]:
+    """ Train the model """
+    if args.local_rank in [-1, 0]:
+        tb_writer = SummaryWriter()
+    return None
+
 if __name__ == '__main__':
     args = Args()
-    '''
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
     trn_df, val_df = read_csv()
     dataset = load_and_cache_examples(args, tokenizer, trn_df, val_df, evaluate=True)
-    print(len(val_df), len(dataset))
-    print(dataset[0])
-    '''
+    train(args, trn_df)
