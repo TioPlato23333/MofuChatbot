@@ -26,7 +26,7 @@ from transformers import (
     WEIGHTS_NAME,
     AdamW,
     AutoConfig,
-    AutoModelWithLMHead,
+    AutoModelForCausalLM,
     AutoTokenizer,
     PreTrainedModel,
     PreTrainedTokenizer,
@@ -67,6 +67,7 @@ class Args():
         self.max_grad_norm = 1.0
         self.num_train_epochs = 3
         self.max_steps = -1
+        self.n_gpu = 1
         self.warmup_steps = 0
         self.logging_steps = 1000
         self.save_steps = 3500
@@ -98,7 +99,7 @@ def read_csv():
     trn_df, val_df = train_test_split(df, test_size=0.1)
     return trn_df, val_df
 
-def construct_conv(row, tokenizer, eos=True):
+def construct_conv(row, tokenizer):
     flatten = lambda l: [item for sublist in l for item in sublist]
     conv = list(reversed([tokenizer.encode(x) + [tokenizer.eos_token_id] for x in row]))
     conv = flatten(conv)
@@ -181,15 +182,33 @@ def _rotate_checkpoints(args, checkpoint_prefix='checkpoint', use_mtime=False) -
         logger.info('Deleting older checkpoint [{}] due to args.save_total_limit'.format(checkpoint))
         shutil.rmtree(checkpoint)
 
-def train(args, train_dataset, model=PreTrainedModel, tokenizer=PreTrainedTokenizer) -> Tuple[int, float]:
-    """ Train the model """
+def train(args, train_dataset, model: PreTrainedModel, tokenizer: PreTrainedTokenizer) -> Tuple[int, float]:
+    ''' Train the model '''
     if args.local_rank in [-1, 0]:
         tb_writer = SummaryWriter()
+
+    args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
+
+    def collate(examples: List[torch.Tensor]):
+        if tokenizer._pad_token is None:
+            return pad_sequence(examples, batch_first=True)
+        return pad_sequence(examples, batch_first=True, padding_value=tokenizer.pad_token_id)
+
+    train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
+    train_dataloader = DataLoader(
+        train_dataset, sampler=train_sampler, batch_size=args.train_batch_size, collate_fn=collate, drop_last=True
+    )
     return None
 
 if __name__ == '__main__':
     args = Args()
+    config = AutoConfig.from_pretrained(args.config_name, cache_dir=args.cache_dir)
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_name_or_path,
+        from_tf=False,
+        config=config,
+        cache_dir=args.cache_dir,
+    )
     trn_df, val_df = read_csv()
-    dataset = load_and_cache_examples(args, tokenizer, trn_df, val_df, evaluate=True)
-    train(args, trn_df)
+    train(args, trn_df, model, tokenizer)
