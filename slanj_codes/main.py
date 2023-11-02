@@ -198,6 +198,17 @@ def train(args, train_dataset, model: PreTrainedModel, tokenizer: PreTrainedToke
     train_dataloader = DataLoader(
         train_dataset, sampler=train_sampler, batch_size=args.train_batch_size, collate_fn=collate, drop_last=True
     )
+
+    if args.max_steps > 0:
+        t_total = args.max_steps
+        args.num_train_epochs = args.max_steps // (len(train_dataloader) // args.gradient_accumulation_steps) + 1
+    else:
+        t_total = len(train_dataloader) // args.gradient_accumulation_steps * args.num_train_epochs
+
+    model = model.module if hasattr(model, "module") else model  # Take care of distributed/parallel training
+    model.resize_token_embeddings(len(tokenizer))
+    # add_special_tokens_(model, tokenizer)
+
     return None
 
 if __name__ == '__main__':
