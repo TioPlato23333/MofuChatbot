@@ -373,6 +373,19 @@ def train(args, train_dataset, model: PreTrainedModel, tokenizer: PreTrainedToke
 
     return global_step, tr_loss / global_step
 
+# Evaluation of some model
+
+def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, df_trn, df_val, prefix='') -> Dict:
+    # Loop to handle MNLI double evaluation (matched, mis-matched)
+    eval_output_dir = args.output_dir
+
+    eval_dataset = load_and_cache_examples(args, tokenizer, df_trn, df_val, evaluate=True)
+    os.makedirs(eval_output_dir, exist_ok=True)
+    args.eval_batch_size = args.per_gpu_eval_batch_size * max(1, args.n_gpu)
+    # Note that DistributedSampler samples randomly
+
+    return None
+
 if __name__ == '__main__':
     args = Args()
 
@@ -393,4 +406,5 @@ if __name__ == '__main__':
     model.to(args.device)
     df_trn, df_val = read_csv()
     train_dataset = load_and_cache_examples(args, tokenizer, df_trn, df_val, evaluate=False)
-    train(args, train_dataset, model, tokenizer)
+    # train(args, train_dataset, model, tokenizer)
+    evaluate(args, model, tokenizer, df_trn, df_val)
