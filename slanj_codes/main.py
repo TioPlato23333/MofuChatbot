@@ -394,6 +394,18 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, df_tr
         eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size, collate_fn=collate, drop_last=True
     )
 
+    # multi-gpu evaluate
+    if args.n_gpu > 1:
+        model = torch.nn.DataParallel(model)
+
+    # Eval!
+    logger.info("***** Running evaluation {} *****".format(prefix))
+    logger.info("  Num examples = %d", len(eval_dataset))
+    logger.info("  Batch size = %d", args.eval_batch_size)
+    eval_loss = 0.0
+    nb_eval_steps = 0
+    model.eval()
+
     return None
 
 if __name__ == '__main__':
