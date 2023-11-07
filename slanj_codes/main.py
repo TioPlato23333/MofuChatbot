@@ -406,6 +406,20 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, df_tr
     nb_eval_steps = 0
     model.eval()
 
+    for batch in tqdm(eval_dataloader, desc='Evaluating'):
+        inputs, labels = (batch, batch)
+        inputs = inputs.to(args.device)
+        labels = labels.to(args.device)
+
+        with torch.no_grad():
+            outputs = model(inputs, labels=labels)
+            lm_loss = outputs[0]
+            eval_loss += lm_loss.mean().item()
+        nb_eval_steps += 1
+
+    eval_loss = eval_loss / nb_eval_steps
+    perplexity = torch.exp(torch.tensor(eval_loss))
+
     return None
 
 if __name__ == '__main__':
