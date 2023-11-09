@@ -420,7 +420,16 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, df_tr
     eval_loss = eval_loss / nb_eval_steps
     perplexity = torch.exp(torch.tensor(eval_loss))
 
-    return None
+    result = {"perplexity": perplexity}
+
+    output_eval_file = os.path.join(eval_output_dir, prefix, "eval_results.txt")
+    with open(output_eval_file, "w") as writer:
+        logger.info("***** Eval results {} *****".format(prefix))
+        for key in sorted(result.keys()):
+            logger.info("  %s = %s", key, str(result[key]))
+            writer.write("%s = %s\n" % (key, str(result[key])))
+
+    return result
 
 if __name__ == '__main__':
     args = Args()
@@ -443,4 +452,4 @@ if __name__ == '__main__':
     df_trn, df_val = read_csv()
     train_dataset = load_and_cache_examples(args, tokenizer, df_trn, df_val, evaluate=False)
     # train(args, train_dataset, model, tokenizer)
-    evaluate(args, model, tokenizer, df_trn, df_val)
+    print(evaluate(args, model, tokenizer, df_trn, df_val))
