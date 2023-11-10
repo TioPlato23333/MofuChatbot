@@ -434,8 +434,23 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, df_tr
 if __name__ == '__main__':
     args = Args()
 
+    if args.should_continue:
+        sorted_checkpoints = _sorted_checkpoints(args)
+        if len(sorted_checkpoints) == 0:
+            raise ValueError("Used --should_continue but no checkpoint was found in --output_dir.")
+        else:
+            args.model_name_or_path = sorted_checkpoints[-1]
+
+    if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and \
+       args.do_train and not args.overwrite_output_dir and not args.should_continue:
+        raise ValueError(
+            "Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(
+                args.output_dir
+            )
+        )
+
     # Setup CUDA, GPU & distributed training
-    device = torch.device('cpu')
+    device = torch.device("cpu")
     args.n_gpu = torch.cuda.device_count()
     args.device = device
 
