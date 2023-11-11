@@ -399,9 +399,9 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, df_tr
         model = torch.nn.DataParallel(model)
 
     # Eval!
-    logger.info("***** Running evaluation {} *****".format(prefix))
-    logger.info("  Num examples = %d", len(eval_dataset))
-    logger.info("  Batch size = %d", args.eval_batch_size)
+    logger.info('***** Running evaluation {} *****'.format(prefix))
+    logger.info('  Num examples = %d', len(eval_dataset))
+    logger.info('  Batch size = %d', args.eval_batch_size)
     eval_loss = 0.0
     nb_eval_steps = 0
     model.eval()
@@ -420,14 +420,14 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, df_tr
     eval_loss = eval_loss / nb_eval_steps
     perplexity = torch.exp(torch.tensor(eval_loss))
 
-    result = {"perplexity": perplexity}
+    result = {'perplexity': perplexity}
 
-    output_eval_file = os.path.join(eval_output_dir, prefix, "eval_results.txt")
-    with open(output_eval_file, "w") as writer:
-        logger.info("***** Eval results {} *****".format(prefix))
+    output_eval_file = os.path.join(eval_output_dir, prefix, 'eval_results.txt')
+    with open(output_eval_file, 'w') as writer:
+        logger.info('***** Eval results {} *****'.format(prefix))
         for key in sorted(result.keys()):
-            logger.info("  %s = %s", key, str(result[key]))
-            writer.write("%s = %s\n" % (key, str(result[key])))
+            logger.info('  %s = %s', key, str(result[key]))
+            writer.write('%s = %s\n' % (key, str(result[key])))
 
     return result
 
@@ -437,23 +437,39 @@ if __name__ == '__main__':
     if args.should_continue:
         sorted_checkpoints = _sorted_checkpoints(args)
         if len(sorted_checkpoints) == 0:
-            raise ValueError("Used --should_continue but no checkpoint was found in --output_dir.")
+            raise ValueError('Used --should_continue but no checkpoint was found in --output_dir.')
         else:
             args.model_name_or_path = sorted_checkpoints[-1]
 
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and \
        args.do_train and not args.overwrite_output_dir and not args.should_continue:
         raise ValueError(
-            "Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(
+            'Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.'.format(
                 args.output_dir
             )
         )
 
     # Setup CUDA, GPU & distributed training
-    device = torch.device("cpu")
+    device = torch.device('cpu')
     args.n_gpu = torch.cuda.device_count()
     args.device = device
 
+    # Setup logging
+    logging.basicConfig(
+        format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+        datefmt='%m/%d/%Y %H:%M:%S',
+        level=logging.INFO if args.local_rank in [-1, 0] else logging.WARN,
+    )
+    logger.warning(
+        'Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s',
+        args.local_rank,
+        device,
+        args.n_gpu,
+        bool(args.local_rank != -1),
+        args.fp16,
+    )
+
+    # Set seed
     set_seed(args)
     config = AutoConfig.from_pretrained(args.config_name, cache_dir=args.cache_dir)
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
