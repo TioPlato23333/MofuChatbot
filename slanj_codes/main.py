@@ -471,6 +471,7 @@ if __name__ == '__main__':
 
     # Set seed
     set_seed(args)
+
     config = AutoConfig.from_pretrained(args.config_name, cache_dir=args.cache_dir)
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
     model = AutoModelForCausalLM.from_pretrained(
@@ -480,7 +481,5 @@ if __name__ == '__main__':
         cache_dir=args.cache_dir,
     )
     model.to(args.device)
-    df_trn, df_val = read_csv()
-    train_dataset = load_and_cache_examples(args, tokenizer, df_trn, df_val, evaluate=False)
-    # train(args, train_dataset, model, tokenizer)
-    print(evaluate(args, model, tokenizer, df_trn, df_val))
+
+    logger.info('Training/evaluation parameters %s', args)
